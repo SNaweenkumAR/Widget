@@ -14,7 +14,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ChatMessage from './ChatMessage';
 import { ChatBoxProps } from './types';
 import useChatMessages from '../../hooks/useChatMessages';
-  
+
 const ChatBox: React.FC<ChatBoxProps> = ({ isOpen, onClose }) => {
   const [inputValue, setInputValue] = useState('');
   const { messages, isLoading, addMessage, clearMessages } = useChatMessages();
