@@ -5,7 +5,6 @@ import {
   IconButton,
   TextField,
   Typography,
-  Drawer,
   CircularProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -15,7 +14,7 @@ import ChatMessage from './ChatMessage';
 import { ChatBoxProps } from './types';
 import useChatMessages from '../../hooks/useChatMessages';
 
-const ChatBox: React.FC<ChatBoxProps> = ({ isOpen, onClose }) => {
+const ChatBox: React.FC<ChatBoxProps> = ({ isOpen, onClose, position }) => {
   const [inputValue, setInputValue] = useState('');
   const { messages, isLoading, addMessage, clearMessages } = useChatMessages();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -40,18 +39,67 @@ const ChatBox: React.FC<ChatBoxProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  if (!isOpen) return null;
+
+  // Calculate the position of the chat box based on widget position
+  let chatBoxStyle = {};
+  const chatBoxWidth = 350;
+  const chatBoxHeight = 500;
+  
+  // Check if widget is near the bottom of the screen
+  const bottomThreshold = window.innerHeight - 200; // Consider bottom 200px as "bottom of screen"
+  
+  if (position.y > bottomThreshold) {
+    // Widget is at bottom - open chat above the widget
+    chatBoxStyle = {
+      bottom: window.innerHeight - position.y + 20,
+      left: position.x - chatBoxWidth / 2
+    };
+  } else if (position.x < window.innerWidth / 2) {
+    // Widget is on left side (and not at bottom) - open chat to the right
+    chatBoxStyle = {
+      left: position.x + 70,
+      top: position.y
+    };
+  } else {
+    // Widget is on right side (and not at bottom) - open chat to the left
+    chatBoxStyle = {
+      right: window.innerWidth - position.x + 20,
+      top: position.y
+    };
+  }
+  
+  // Safety check to ensure chatbox is always visible
+  // If chatbox would go off-screen to the left
+  if (position.x - chatBoxWidth / 2 < 0 && position.y > bottomThreshold) {
+    chatBoxStyle = {
+      bottom: window.innerHeight - position.y + 20,
+      left: 10
+    };
+  }
+  
+  // If chatbox would go off-screen to the right
+  if (position.x + chatBoxWidth / 2 > window.innerWidth && position.y > bottomThreshold) {
+    chatBoxStyle = {
+      bottom: window.innerHeight - position.y + 20,
+      right: 10
+    };
+  }
+  
   return (
-    <Drawer
-      anchor="right"
-      open={isOpen}
-      onClose={onClose}
-      PaperProps={{
-        sx: {
-          width: { xs: '100%', sm: 400 },
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-        },
+    <Box
+      sx={{
+        position: 'fixed',
+        ...chatBoxStyle,
+        width: chatBoxWidth,
+        height: chatBoxHeight,
+        display: 'flex',
+        flexDirection: 'column',
+        boxShadow: 6,
+        zIndex: 1100,
+        bgcolor: 'background.paper',
+        borderRadius: 1,
+        overflow: 'hidden',
       }}
     >
       {/* Header */}
@@ -63,19 +111,21 @@ const ChatBox: React.FC<ChatBoxProps> = ({ isOpen, onClose }) => {
           justifyContent: 'space-between',
           alignItems: 'center',
           borderRadius: 0,
+          bgcolor: 'primary.main',
+          color: 'white',
         }}
       >
         <Typography variant="h6">AI Assistant</Typography>
         <Box>
-          <IconButton onClick={clearMessages} color="primary" size="small" sx={{ mr: 1 }}>
+          <IconButton onClick={clearMessages} color="inherit" size="small" sx={{ mr: 1 }}>
             <DeleteIcon />
           </IconButton>
-          <IconButton onClick={onClose} color="default" size="small">
+          <IconButton onClick={onClose} color="inherit" size="small">
             <CloseIcon />
           </IconButton>
         </Box>
       </Paper>
-
+      
       {/* Messages Container */}
       <Box
         sx={{
@@ -90,7 +140,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ isOpen, onClose }) => {
         ))}
         <div ref={messagesEndRef} />
       </Box>
-
+      
       {/* Input Area */}
       <Paper
         elevation={3}
@@ -132,7 +182,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ isOpen, onClose }) => {
           </IconButton>
         )}
       </Paper>
-    </Drawer>
+    </Box>
   );
 };
 

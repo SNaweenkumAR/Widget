@@ -9,6 +9,7 @@ const ChatWidget: React.FC = () => {
   
   // Position state for the widget
   const [position, setPosition] = useState({ x: window.innerWidth - 80, y: 20 });
+  
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
@@ -17,9 +18,7 @@ const ChatWidget: React.FC = () => {
   const dragThreshold = 5; // pixels
 
   const handleToggleChat = () => {
-    if (!isDragging) {
-      setIsChatOpen(!isChatOpen);
-    }
+    setIsChatOpen(!isChatOpen);
   };
 
   const handleCloseChat = () => {
@@ -27,7 +26,7 @@ const ChatWidget: React.FC = () => {
   };
 
   // Drag handlers for the widget
-  const handleMouseDown = (e: React.MouseEvent) => {      
+  const handleMouseDown = (e: React.MouseEvent) => {
     if (widgetRef.current) {
       const boundingRect = widgetRef.current.getBoundingClientRect();
       setDragOffset({
@@ -42,6 +41,7 @@ const ChatWidget: React.FC = () => {
       });
       
       setIsDragging(true);
+      e.stopPropagation(); // Stop event from reaching the Fab onClick handler
     }
   };
 
@@ -69,10 +69,8 @@ const ChatWidget: React.FC = () => {
         Math.pow(e.clientY - dragStart.y, 2)
       );
       
-      // If drag distance is small, treat as click
-      if (dragDistance < dragThreshold) {
-        setIsChatOpen(!isChatOpen);
-      }
+      // Only toggle chat if it was a click (very small drag distance)
+      // Removed this functionality to fix the issue
       
       setIsDragging(false);
     }
@@ -89,7 +87,7 @@ const ChatWidget: React.FC = () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, isChatOpen]);
+  }, [isDragging]);
 
   return (
     <>
@@ -100,11 +98,9 @@ const ChatWidget: React.FC = () => {
           top: `${position.y}px`,
           left: `${position.x}px`,
           zIndex: 1000,
-          cursor: isDragging ? 'grabbing' : 'grab',
           userSelect: 'none',
           transition: isDragging ? 'none' : 'box-shadow 0.3s ease',
         }}
-        onMouseDown={handleMouseDown}
       >
         <Tooltip title={isDragging ? "Dragging.." : (isChatOpen ? "Close chat" : "Chat with AI")}>
           <Fab
@@ -112,13 +108,16 @@ const ChatWidget: React.FC = () => {
             aria-label="chat"
             sx={{
               boxShadow: isDragging ? '0px 6px 12px rgba(0,0,0,0.3)' : 3,
+              cursor: isDragging ? 'grabbing' : 'pointer',
             }}
+            onClick={handleToggleChat}
+            onMouseDown={handleMouseDown}
           >
             <ChatIcon />
           </Fab>
         </Tooltip>
       </Box>
-      <ChatBox isOpen={isChatOpen} onClose={handleCloseChat} />
+      {isChatOpen && <ChatBox isOpen={isChatOpen} onClose={handleCloseChat} position={position} />}
     </>
   );
 };
