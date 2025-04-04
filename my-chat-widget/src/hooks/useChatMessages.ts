@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Message } from '../components/ChatBox/types';
-import { getAIResponse } from '../api/aiService';
+import { getAIResponse, getAIResponseWithFiles, handleFilesLocally } from '../api/aiService';
 
 export const useChatMessages = () => {
   const [messages, setMessages] = useState<Message[]>([
@@ -10,7 +10,6 @@ export const useChatMessages = () => {
       sender: 'ai',
       timestamp: new Date(),
     },
-  
   ]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -56,6 +55,50 @@ export const useChatMessages = () => {
     }
   }, []);
 
+  const addMessageWithFiles = useCallback(async (messageText: string, files: File[]) => {
+    // First, create local file URLs for display
+    const userFiles = [...files]; // Make a copy to avoid mutation
+    
+    // Add user message with files
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: messageText,
+      sender: 'user',
+      timestamp: new Date(),
+      files: userFiles,
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+
+    try {
+      // Get AI response with files context
+      const aiResponse = await getAIResponseWithFiles(messageText, files);
+      
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: aiResponse,
+        sender: 'ai',
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Failed to get AI response with files:', error);
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: 'Sorry, I encountered an issue processing your request with file attachments. Please try again.',
+        sender: 'ai',
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const clearMessages = useCallback(() => {
     setMessages([
       {
@@ -71,6 +114,7 @@ export const useChatMessages = () => {
     messages,
     isLoading,
     addMessage,
+    addMessageWithFiles,
     clearMessages,
   };
 };
