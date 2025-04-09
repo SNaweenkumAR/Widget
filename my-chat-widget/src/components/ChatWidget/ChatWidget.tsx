@@ -7,24 +7,27 @@ const ChatWidget: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const widgetRef = useRef<HTMLDivElement>(null);
   
-
   const [position, setPosition] = useState({ x: window.innerWidth -75, y: 660 });
   
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
-
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const dragThreshold = 5; // pixels
+  const dragThreshold = 5;
+  
+  // New variable to track if we're handling a drag vs a click
+  const [wasDragged, setWasDragged] = useState(false);
 
   const handleToggleChat = () => {
-    setIsChatOpen(!isChatOpen);
+    // Only toggle chat if we weren't dragging
+    if (!wasDragged) {
+      setIsChatOpen(!isChatOpen);
+    }
   };
 
   const handleCloseChat = () => {
     setIsChatOpen(false);
   };
-
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (widgetRef.current) {
@@ -39,16 +42,26 @@ const ChatWidget: React.FC = () => {
       });
       
       setIsDragging(true);
-      e.stopPropagation(); 
+      setWasDragged(false); // Reset drag tracker on mousedown
+      e.stopPropagation();
     }
   };
 
   const handleMouseMove = (e: MouseEvent) => {
     if (isDragging) {
+      const dragDistance = Math.sqrt(
+        Math.pow(e.clientX - dragStart.x, 2) + 
+        Math.pow(e.clientY - dragStart.y, 2)
+      );
+      
+      // If we've moved beyond the threshold, consider this a drag operation
+      if (dragDistance > dragThreshold) {
+        setWasDragged(true);
+      }
+      
       const newX = e.clientX - dragOffset.x;
       const newY = e.clientY - dragOffset.y;
       
-     
       const maxX = window.innerWidth - (widgetRef.current?.offsetWidth || 60);
       const maxY = window.innerHeight - (widgetRef.current?.offsetHeight || 60);
       
@@ -61,13 +74,11 @@ const ChatWidget: React.FC = () => {
 
   const handleMouseUp = (e: MouseEvent) => {
     if (isDragging) {
-     
-      const dragDistance = Math.sqrt(
-        Math.pow(e.clientX - dragStart.x, 2) + 
-        Math.pow(e.clientY - dragStart.y, 2)
-      );
-      
-      
+      // Set timeout to reset the wasDragged state
+      // This prevents accidental clicks right after dragging
+      setTimeout(() => {
+        setWasDragged(false);
+      }, 300);
       
       setIsDragging(false);
     }

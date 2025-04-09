@@ -225,7 +225,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ isOpen, onClose, position }) => {
                 }
               }}
             />
-          ))}
+          ))} 
         </Box>
       )}
       
